@@ -6,6 +6,10 @@
 #include "constants/event_objects.h"
 #include "constants/map_scripts.h"
 
+#if PORYLIVE
+#include "porylive.h"
+#endif // PORYLIVE
+
 #define RAM_SCRIPT_MAGIC 51
 
 enum {
@@ -51,7 +55,11 @@ void InitScriptContext(struct ScriptContext *ctx, void *cmdTable, void *cmdTable
 
 u8 SetupBytecodeScript(struct ScriptContext *ctx, const u8 *ptr)
 {
+    #if PORYLIVE
+    ctx->scriptPtr = PoryLive_GetScriptPointer(ptr);
+    #else
     ctx->scriptPtr = ptr;
+    #endif // PORYLIVE
     ctx->mode = SCRIPT_MODE_BYTECODE;
     return 1;
 }
@@ -73,6 +81,10 @@ bool8 RunScriptCommand(struct ScriptContext *ctx)
     if (ctx->mode == SCRIPT_MODE_STOPPED)
         return FALSE;
 
+    #if PORYLIVE
+    ctx->scriptPtr = PoryLive_GetScriptPointer(ctx->scriptPtr);
+    #endif // PORYLIVE
+
     switch (ctx->mode)
     {
     case SCRIPT_MODE_STOPPED:
@@ -86,6 +98,9 @@ bool8 RunScriptCommand(struct ScriptContext *ctx)
                 ctx->mode = SCRIPT_MODE_BYTECODE;
             return TRUE;
         }
+        #if PORYLIVE
+        ctx->scriptPtr = PoryLive_GetScriptPointer(ctx->scriptPtr);
+        #endif // PORYLIVE
         ctx->mode = SCRIPT_MODE_BYTECODE;
         // fallthrough
     case SCRIPT_MODE_BYTECODE:
@@ -105,6 +120,10 @@ bool8 RunScriptCommand(struct ScriptContext *ctx)
                 while (1)
                     asm("svc 2"); // HALT
             }
+
+            #if PORYLIVE
+            ctx->scriptPtr = PoryLive_GetScriptPointer(ctx->scriptPtr);
+            #endif // PORYLIVE
 
             cmdCode = *(ctx->scriptPtr);
             ctx->scriptPtr++;
@@ -149,18 +168,31 @@ static const u8 *ScriptPop(struct ScriptContext *ctx)
 
 void ScriptJump(struct ScriptContext *ctx, const u8 *ptr)
 {
+    #if PORYLIVE
+    ctx->scriptPtr = PoryLive_GetScriptPointer(ptr);
+    #else
     ctx->scriptPtr = ptr;
+    #endif // PORYLIVE
 }
 
 void ScriptCall(struct ScriptContext *ctx, const u8 *ptr)
 {
+    #if PORYLIVE
+    ScriptPush(ctx, ctx->scriptPtr);
+    ctx->scriptPtr = PoryLive_GetScriptPointer(ptr);
+    #else
     ScriptPush(ctx, ctx->scriptPtr);
     ctx->scriptPtr = ptr;
+    #endif // PORYLIVE
 }
 
 void ScriptReturn(struct ScriptContext *ctx)
 {
+    #if PORYLIVE
     ctx->scriptPtr = ScriptPop(ctx);
+    #else
+    ctx->scriptPtr = ScriptPop(ctx);
+    #endif // PORYLIVE
 }
 
 u16 ScriptReadHalfword(struct ScriptContext *ctx)

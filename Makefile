@@ -14,12 +14,17 @@ BUILD_DIR := build
 MODERN      ?= 0
 # Compares the ROM to a checksum of the original - only makes sense using when non-modern
 COMPARE     ?= 0
+# Enables PoryLive functionality for live development
+PORYLIVE     ?= 0
 
 ifeq (modern,$(MAKECMDGOALS))
   MODERN := 1
 endif
 ifeq (compare,$(MAKECMDGOALS))
   COMPARE := 1
+endif
+ifneq (,$(filter live live-update live-prep,$(MAKECMDGOALS)))
+  PORYLIVE := 1
 endif
 
 # Default make rule
@@ -71,6 +76,8 @@ ROM_NAME := $(FILE_NAME).gba
 OBJ_DIR_NAME := $(BUILD_DIR)/emerald
 MODERN_ROM_NAME := $(FILE_NAME)_modern.gba
 MODERN_OBJ_DIR_NAME := $(BUILD_DIR)/modern
+OBJ_DIR_NAME_PORYLIVE := $(BUILD_DIR)/porylive
+MODERN_OBJ_DIR_NAME_PORYLIVE := $(BUILD_DIR)/modern-porylive
 
 ELF_NAME := $(ROM_NAME:.gba=.elf)
 MAP_NAME := $(ROM_NAME:.gba=.map)
@@ -88,6 +95,14 @@ endif
 ELF := $(ROM:.gba=.elf)
 MAP := $(ROM:.gba=.map)
 SYM := $(ROM:.gba=.sym)
+
+ifeq ($(PORYLIVE),1)
+  ifeq ($(MODERN),1)
+    OBJ_DIR := $(MODERN_OBJ_DIR_NAME_PORYLIVE)
+  else
+    OBJ_DIR := $(OBJ_DIR_NAME_PORYLIVE)
+  endif
+endif
 
 # Commonly used directories
 C_SUBDIR = src
@@ -147,6 +162,11 @@ RAMSCRGEN := $(TOOLS_DIR)/ramscrgen/ramscrgen$(EXE)
 FIX       := $(TOOLS_DIR)/gbafix/gbafix$(EXE)
 MAPJSON   := $(TOOLS_DIR)/mapjson/mapjson$(EXE)
 JSONPROC  := $(TOOLS_DIR)/jsonproc/jsonproc$(EXE)
+
+include make_live.mk
+ifeq ($(PORYLIVE),1)
+  CPPFLAGS += -DPORYLIVE=1
+endif
 
 PERL := perl
 SHA1 := $(shell { command -v sha1sum || command -v shasum; } 2>/dev/null) -c
@@ -235,7 +255,7 @@ endif
 
 syms: $(SYM)
 
-clean: tidy clean-tools clean-generated clean-assets
+clean: tidy clean-tools clean-generated clean-assets clean-live
 	@$(MAKE) clean -C libagbsyscall
 
 clean-assets:
@@ -255,6 +275,10 @@ tidynonmodern:
 tidymodern:
 	rm -f $(MODERN_ROM_NAME) $(MODERN_ELF_NAME) $(MODERN_MAP_NAME)
 	rm -rf $(MODERN_OBJ_DIR_NAME)
+
+clean-live:
+	rm -rf $(OBJ_DIR_NAME_PORYLIVE)
+	rm -rf $(MODERN_OBJ_DIR_NAME_PORYLIVE)
 
 # Other rules
 include graphics_file_rules.mk
