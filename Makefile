@@ -23,7 +23,7 @@ endif
 ifeq (compare,$(MAKECMDGOALS))
   COMPARE := 1
 endif
-ifneq (,$(filter live live-update live-prep,$(MAKECMDGOALS)))
+ifneq (,$(filter live live-update live-prep clean-live tidylive,$(MAKECMDGOALS)))
   PORYLIVE := 1
 endif
 
@@ -183,6 +183,9 @@ MAKEFLAGS += --no-print-directory
 RULES_NO_SCAN += libagbsyscall clean clean-assets tidy tidymodern tidynonmodern generated clean-generated
 .PHONY: all rom modern compare
 .PHONY: $(RULES_NO_SCAN)
+
+# PoryLive no scan rules
+RULES_NO_SCAN += live-update live-prep clean-live tidylive
 
 infoshell = $(foreach line, $(shell $1 | sed "s/ /__SPACE__/g"), $(info $(subst __SPACE__, ,$(line))))
 

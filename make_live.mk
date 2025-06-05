@@ -9,11 +9,6 @@ endif
 DATA_ASM_BUILDDIR_PORYLIVE ?= $(OBJ_DIR_PORYLIVE)/$(DATA_ASM_SUBDIR)
 
 WATCHMAN_JSON := tools/porylive/watchman.json
-WATCHMAN_MODERN_JSON := tools/porylive/watchman_modern.json
-
-ifeq ($(MODERN),1)
-  WATCHMAN_JSON := $(WATCHMAN_MODERN_JSON)
-endif
 
 # Live targets
 .PHONY: live tidylive live-update live-prep
@@ -58,8 +53,10 @@ live: tidylive all live-prep
 	tail -n 0 -F .porylive/porylive_on_change.log
 
 tidylive:
-	rm -rf $(OBJ_DIR_PORYLIVE)/data
-	mkdir -p $(OBJ_DIR_PORYLIVE)/data
+	find $(OBJ_DIR_PORYLIVE)/data -name "*.lst" -type f -delete 2>/dev/null || true
+	rm -rf $(OBJ_DIR_PORYLIVE)/bin
+	rm -f $(OBJ_DIR_PORYLIVE)/porylive_generated_files.json
+	rm -f $(OBJ_DIR_PORYLIVE)/porylive_generated_files.lua
 
 live-update:
 	@for src in $(DATA_ASM_SRCS); do \
